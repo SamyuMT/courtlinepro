@@ -29,9 +29,17 @@ class ManualControlController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    bluetoothController = Get.find<BluetoothController>();
-    configController = Get.find<RobotConfigController>();
-    _initializeVelocities();
+    try {
+      bluetoothController = Get.find<BluetoothController>();
+      configController = Get.find<RobotConfigController>();
+      _initializeVelocities();
+    } catch (e) {
+      Get.snackbar(
+        'Error de inicialización',
+        'No se pudieron cargar los controladores necesarios',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   @override

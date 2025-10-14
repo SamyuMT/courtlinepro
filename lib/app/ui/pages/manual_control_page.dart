@@ -306,7 +306,7 @@ class ManualControlPage extends GetView<ManualControlController> {
     VoidCallback? onPressed,
   }) {
     Widget iconWidget;
-    
+
     if (svgAsset != null) {
       iconWidget = SvgPicture.asset(
         svgAsset,

@@ -49,11 +49,6 @@ class RobotTestsPage extends GetView<RobotTestsController> {
                     ],
                   ),
                 ),
-
-                const SizedBox(width: 24),
-
-                // Botón de reinicio
-                _buildRestartButton(),
               ],
             ),
           ),
@@ -74,19 +69,75 @@ class RobotTestsPage extends GetView<RobotTestsController> {
 
   Widget _buildInstructions() {
     return Container(
+      width: double.infinity,
+      height: 140,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Colors.black87,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text("Testing begins:", style: AppTextStyles.instructions),
-          SizedBox(height: 4),
-          Text(
-            "Here are the instructions that the user must follow.",
-            style: AppTextStyles.instructions,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.terminal, color: AppColors.primary, size: 16),
+              const SizedBox(width: 8),
+              const Text(
+                "Robot Serial Console:",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Terminal de mensajes BLE
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Obx(() {
+                if (controller.instructionMessages.isEmpty) {
+                  return const Text(
+                    "> Esperando conexión del robot...",
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  reverse: true, // Mostrar mensajes más recientes abajo
+                  itemCount: controller.instructionMessages.length,
+                  itemBuilder: (context, index) {
+                    int reverseIndex =
+                        controller.instructionMessages.length - 1 - index;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 1),
+                      child: Text(
+                        "> ${controller.instructionMessages[reverseIndex]}",
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
           ),
         ],
       ),
@@ -119,27 +170,27 @@ class RobotTestsPage extends GetView<RobotTestsController> {
                   _buildTestItem(
                     "Forward movement",
                     controller.movementTests['forward']!.value,
-                    () => controller.executeTest('forward'),
+                    () => controller.confirmTest('forward'),
                   ),
                   _buildTestItem(
                     "Reverse movement",
                     controller.movementTests['reverse']!.value,
-                    () => controller.executeTest('reverse'),
+                    () => controller.confirmTest('reverse'),
                   ),
                   _buildTestItem(
                     "Right turn",
                     controller.movementTests['right']!.value,
-                    () => controller.executeTest('right'),
+                    () => controller.confirmTest('right'),
                   ),
                   _buildTestItem(
                     "Left turn",
                     controller.movementTests['left']!.value,
-                    () => controller.executeTest('left'),
+                    () => controller.confirmTest('left'),
                   ),
                   _buildTestItem(
                     "In-place rotation",
                     controller.movementTests['rotation']!.value,
-                    () => controller.executeTest('rotation'),
+                    () => controller.confirmTest('rotation'),
                   ),
 
                   const SizedBox(height: 24),
@@ -155,17 +206,17 @@ class RobotTestsPage extends GetView<RobotTestsController> {
                   _buildTestItem(
                     "solenoid valve off",
                     controller.solenoidTests['off']!.value,
-                    () => controller.executeTest('solenoid_off'),
+                    () => controller.confirmTest('solenoid_off'),
                   ),
                   _buildTestItem(
                     "solenoid valve on",
                     controller.solenoidTests['on']!.value,
-                    () => controller.executeTest('solenoid_on'),
+                    () => controller.confirmTest('solenoid_on'),
                   ),
                   _buildTestItem(
                     "solenoid valve on in motion",
                     controller.solenoidTests['motion']!.value,
-                    () => controller.executeTest('solenoid_motion'),
+                    () => controller.confirmTest('solenoid_motion'),
                   ),
                 ],
               );
@@ -217,30 +268,5 @@ class RobotTestsPage extends GetView<RobotTestsController> {
         textStyle: AppTextStyles.buttonMedium,
       );
     });
-  }
-
-  Widget _buildRestartButton() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Icono de reinicio
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: AppColors.grey,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: IconButton(
-            onPressed: controller.restartTests,
-            icon: const Icon(Icons.refresh, color: Colors.black, size: 30),
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        const Text("restart", style: AppTextStyles.small),
-      ],
-    );
   }
 }

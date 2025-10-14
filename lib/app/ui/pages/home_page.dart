@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/home_controller.dart';
 import '../themes/app_colors.dart';
 import '../themes/app_text_styles.dart';
 import '../themes/app_theme.dart';
+import '../widgets/dev_navigation_widget.dart';
 
 class HomePage extends GetView<HomeController> {
   const HomePage({Key? key}) : super(key: key);
@@ -69,6 +71,9 @@ class HomePage extends GetView<HomeController> {
                     ],
                   ),
                 ),
+
+                // Widget de navegación de desarrollo (solo en modo debug)
+                if (kDebugMode) const DevNavigationWidget(),
               ],
             ),
           ),

@@ -23,8 +23,16 @@ class RobotConfigController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    bluetoothController = Get.find<BluetoothController>();
-    _loadSavedConfiguration();
+    try {
+      bluetoothController = Get.find<BluetoothController>();
+      _loadSavedConfiguration();
+    } catch (e) {
+      Get.snackbar(
+        'Error de inicialización',
+        'No se pudo cargar el controlador Bluetooth',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   @override
