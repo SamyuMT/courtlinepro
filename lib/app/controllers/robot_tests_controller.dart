@@ -28,6 +28,7 @@ class RobotTestsController extends GetxController {
 
   // Control para enviar comando solo una vez
   var testInitiated = false.obs;
+  var robotReady = false.obs; // Si el robot mostró su menú y está listo
 
   // Subscription para recibir datos del BLE
   StreamSubscription? _dataSubscription;
@@ -51,8 +52,8 @@ class RobotTestsController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    // Iniciar test automáticamente al entrar a la página
-    _initiateAutomaticTest();
+    // Solo configurar listener, NO enviar "t" automáticamente
+    _waitForRobotMenu();
   }
 
   @override
@@ -82,13 +83,10 @@ class RobotTestsController extends GetxController {
     } else {
       print('No hay conexión BLE activa');
     }
-  } // Iniciar test automático enviando "t"
+  }
 
-  Future<void> _initiateAutomaticTest() async {
-    if (testInitiated.value) {
-      return; // Ya se inició el test
-    }
-
+  // Esperar a que el robot muestre su menú principal
+  void _waitForRobotMenu() {
     if (!bluetoothController.isConnected.value) {
       currentInstruction.value = "Sin conexión Bluetooth. Conéctate primero.";
       Get.snackbar(
@@ -99,21 +97,36 @@ class RobotTestsController extends GetxController {
       return;
     }
 
-    try {
-      // Configurar el listener de BLE si no está configurado
-      _setupBleDataListener();
+    // Configurar el listener de BLE
+    _setupBleDataListener();
+    currentInstruction.value = "Esperando que el robot muestre su menú...";
 
+    // Solo simular si no hay conexión real
+    if (!bluetoothController.isConnected.value) {
+      _simulateRobotMenu();
+    }
+  }
+
+  // Iniciar test automático enviando "t" - SOLO cuando el robot esté listo
+  Future<void> _initiateAutomaticTest() async {
+    if (testInitiated.value) {
+      return; // Ya se inició el test
+    }
+
+    if (!robotReady.value) {
+      Get.snackbar(
+        'Robot no listo',
+        'Espera a que el robot muestre su menú principal',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    try {
       // Enviar comando "t" para iniciar test automático
       await bluetoothController.sendData("t");
       testInitiated.value = true;
-      currentInstruction.value =
-          "Comando 't' enviado - esperando respuesta del robot...";
-
-      // Los mensajes reales vendrán del BLE a través del listener
-      // Solo simular si no hay conexión (para testing)
-      if (!bluetoothController.isConnected.value) {
-        _simulateTestMessages();
-      }
+      currentInstruction.value = "Comando 't' enviado - iniciando tests...";
 
       Get.snackbar(
         'Test iniciado',
@@ -131,35 +144,23 @@ class RobotTestsController extends GetxController {
     }
   }
 
-  // Simular mensajes que llegarían del BLE (reemplazar con datos reales)
-  void _simulateTestMessages() {
-    Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (instructionMessages.length < 12) {
-        List<String> messages = [
-          "Robot iniciado - esperando comandos",
-          "Comando 't' recibido - iniciando tests",
-          "Test movimiento adelante - iniciado",
-          "Test movimiento adelante - OK",
-          "Test movimiento atrás - iniciado",
-          "Test movimiento atrás - OK",
-          "Test giro derecha - iniciado",
-          "Test giro derecha - OK",
-          "Test giro izquierda - iniciado",
-          "Test giro izquierda - OK",
-          "Test rotación - iniciado",
-          "Todos los tests completados - confirme checklist",
-        ];
+  // Simular el menú del robot (solo para testing sin conexión)
+  void _simulateRobotMenu() {
+    Timer(const Duration(seconds: 2), () {
+      instructionMessages.add("=== ROBOT CONTROL SYSTEM ===");
+      instructionMessages.add("c - Configuration Mode");
+      instructionMessages.add("t - Test Mode");
+      instructionMessages.add("r - Remote Control Mode");
+      instructionMessages.add("s - Activate Relay/Solenoid");
+      instructionMessages.add("Select option:");
 
-        String message = messages[instructionMessages.length];
-        instructionMessages.add(message);
-        currentInstruction.value = message;
+      currentInstruction.value =
+          "Robot listo - Presiona 'Iniciar Test' para enviar 't'";
+      robotReady.value = true;
 
-        // Mantener máximo 10 mensajes en historial
-        if (instructionMessages.length > 10) {
-          instructionMessages.removeAt(0);
-        }
-      } else {
-        timer.cancel();
+      // Mantener máximo 10 mensajes
+      if (instructionMessages.length > 10) {
+        instructionMessages.removeRange(0, instructionMessages.length - 10);
       }
     });
   }
@@ -275,13 +276,33 @@ class RobotTestsController extends GetxController {
 
   // Parsear datos recibidos para determinar el estado del test
   void _parseReceivedData(String data) {
-    // Aquí puedes implementar lógica para interpretar los mensajes
-    // y actualizar automáticamente el estado del checklist si lo deseas
     String lowerData = data.toLowerCase();
 
-    if (lowerData.contains('forward') && lowerData.contains('complete')) {
-      // Auto-check forward test si el mensaje lo indica
+    // Detectar cuando el robot muestra su menú principal
+    if (lowerData.contains('robot control system') ||
+        lowerData.contains('select option') ||
+        (lowerData.contains('test mode') &&
+            lowerData.contains('configuration'))) {
+      robotReady.value = true;
+      currentInstruction.value =
+          "Robot listo - Presiona 'Iniciar Test' para enviar 't'";
+      print('Robot menú detectado - Robot listo para recibir comandos');
     }
-    // Agregar más condiciones según los mensajes que envíe el robot
+
+    // Detectar mensajes de test en progreso
+    if (lowerData.contains('forward movement') ||
+        lowerData.contains('reverse movement') ||
+        lowerData.contains('right turn') ||
+        lowerData.contains('left turn') ||
+        lowerData.contains('rotation') ||
+        lowerData.contains('solenoid')) {
+      // Los tests están ejecutándose
+      print('Test en progreso: $data');
+    }
+  }
+
+  // Método público para iniciar test manualmente
+  void startTest() {
+    _initiateAutomaticTest();
   }
 }

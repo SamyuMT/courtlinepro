@@ -81,16 +81,49 @@ class RobotTestsPage extends GetView<RobotTestsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.terminal, color: AppColors.primary, size: 16),
-              const SizedBox(width: 8),
-              const Text(
-                "Robot Serial Console:",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.terminal, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Robot Serial Console:",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              // Botón Iniciar Test (solo cuando el robot esté listo)
+              Obx(
+                () =>
+                    controller.robotReady.value &&
+                        !controller.testInitiated.value
+                    ? GestureDetector(
+                        onTap: controller.startTest,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            "Iniciar Test",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(),
               ),
             ],
           ),

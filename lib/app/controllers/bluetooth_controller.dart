@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 class BluetoothController extends GetxController {
   // Estado de Bluetooth
@@ -17,7 +19,11 @@ class BluetoothController extends GetxController {
   // Conexión Bluetooth
   BluetoothDevice? connectedDevice;
   BluetoothCharacteristic? writeCharacteristic;
-  BluetoothCharacteristic? readCharacteristic;
+  BluetoothCharacteristic? notifyCharacteristic;
+
+  // Streams para la conexión
+  StreamSubscription<BluetoothConnectionState>? connectionSubscription;
+  StreamSubscription<List<int>>? characteristicSubscription;
 
   // Callback para datos recibidos
   Function(String)? dataCallback;
@@ -40,11 +46,33 @@ class BluetoothController extends GetxController {
     _closeConnection();
   }
 
+  // Solicitar permisos como en la implementación exitosa
+  Future<bool> requestPermissions() async {
+    if (Platform.isAndroid) {
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.bluetoothAdvertise,
+        Permission.location,
+      ].request();
+
+      return statuses.values.every((status) => status.isGranted);
+    }
+    return true;
+  }
+
+  // Verificar si Bluetooth está disponible como en la implementación exitosa
+  Future<bool> isBluetoothAvailable() async {
+    if (!await FlutterBluePlus.isSupported) return false;
+    return (await FlutterBluePlus.adapterState.first) ==
+        BluetoothAdapterState.on;
+  }
+
   // Verificar estado de Bluetooth
   Future<void> _checkBluetoothState() async {
     try {
       // Verificar si Bluetooth está disponible
-      if (await FlutterBluePlus.isAvailable == false) {
+      if (await FlutterBluePlus.isSupported == false) {
         Get.snackbar(
           'Bluetooth no disponible',
           'Este dispositivo no soporta Bluetooth',
@@ -76,32 +104,7 @@ class BluetoothController extends GetxController {
 
   // Solicitar permisos
   Future<void> _requestPermissions() async {
-    try {
-      Map<Permission, PermissionStatus> statuses = await [
-        Permission.bluetooth,
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-        Permission.location,
-      ].request();
-
-      bool allGranted = statuses.values.every(
-        (status) => status == PermissionStatus.granted,
-      );
-
-      if (!allGranted) {
-        Get.snackbar(
-          'Permisos requeridos',
-          'La aplicación necesita permisos de Bluetooth para funcionar correctamente.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      }
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al solicitar permisos: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    }
+    await requestPermissions();
   }
 
   // Iniciar búsqueda de dispositivos
@@ -176,7 +179,7 @@ class BluetoothController extends GetxController {
     }
   }
 
-  // Conectar a un dispositivo (SIMPLIFICADO para HM-10)
+  // Conectar usando la lógica de la implementación exitosa
   Future<void> connectToDevice(Map<String, dynamic> deviceInfo) async {
     if (isConnecting.value) return;
 
@@ -185,31 +188,16 @@ class BluetoothController extends GetxController {
 
     try {
       BluetoothDevice device = deviceInfo['device'];
-
-      // Conectar al dispositivo SIN emparejamiento
-      await device.connect(timeout: const Duration(seconds: 15));
       connectedDevice = device;
 
-      // Configuración simple para HM-10
-      await _setupHM10Characteristics();
+      // Escuchar estado de conexión (como en la implementación exitosa)
+      connectionSubscription = device.connectionState.listen((state) {
+        isConnected.value = state == BluetoothConnectionState.connected;
 
-      isConnected.value = true;
-
-      Get.snackbar(
-        'Conectado',
-        'Conectado a ${deviceInfo['name']} - Listo para enviar comandos',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-
-      // Escuchar desconexiones
-      device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
-          isConnected.value = false;
           connectedDevice = null;
           writeCharacteristic = null;
-          readCharacteristic = null;
+          notifyCharacteristic = null;
           dataCallback = null;
           Get.snackbar(
             'Desconectado',
@@ -218,6 +206,60 @@ class BluetoothController extends GetxController {
           );
         }
       });
+
+      // Conectar al dispositivo
+      await device.connect(timeout: const Duration(seconds: 10));
+
+      // Descubrir servicios (como en la implementación exitosa)
+      List<BluetoothService> services = await device.discoverServices();
+
+      for (BluetoothService service in services) {
+        for (BluetoothCharacteristic characteristic
+            in service.characteristics) {
+          // Buscar característica de escritura
+          if (characteristic.properties.write ||
+              characteristic.properties.writeWithoutResponse) {
+            writeCharacteristic = characteristic;
+          }
+
+          // Buscar característica de notificación
+          if (characteristic.properties.notify ||
+              characteristic.properties.indicate) {
+            notifyCharacteristic = characteristic;
+
+            // Suscribirse a notificaciones (como en la implementación exitosa)
+            await characteristic.setNotifyValue(true);
+            characteristicSubscription = characteristic.lastValueStream.listen((
+              value,
+            ) {
+              if (value.isNotEmpty) {
+                try {
+                  String received = String.fromCharCodes(value);
+                  if (dataCallback != null) {
+                    dataCallback!(received);
+                  }
+                } catch (e) {
+                  // Si falla la decodificación, usar hex string
+                  String hexString = value
+                      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                      .join(' ');
+                  if (dataCallback != null) {
+                    dataCallback!('HEX: $hexString');
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+
+      Get.snackbar(
+        'Conectado',
+        'Conectado a ${deviceInfo['name']} - Listo para enviar comandos',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
     } catch (e) {
       Get.snackbar(
         'Error de conexión',
@@ -230,161 +272,46 @@ class BluetoothController extends GetxController {
     }
   }
 
-  // Configuración SIMPLE para HM-10 (módulo serial transparente)
-  Future<void> _setupHM10Characteristics() async {
-    if (connectedDevice == null) return;
-
-    try {
-      print('Configurando HM-10 para comunicación serial...');
-
-      // Descubrir servicios
-      List<BluetoothService> services = await connectedDevice!
-          .discoverServices();
-      print('Servicios encontrados: ${services.length}');
-
-      // Reset características
-      writeCharacteristic = null;
-      readCharacteristic = null;
-
-      // UUID específico del HM-10 para comunicación serial (solo para referencia)
-
-      // Buscar el servicio y característica específicos del HM-10
-      for (BluetoothService service in services) {
-        print('Servicio: ${service.uuid}');
-
-        for (BluetoothCharacteristic characteristic
-            in service.characteristics) {
-          String charUUID = characteristic.uuid.toString().toLowerCase();
-          print('  Característica: $charUUID');
-
-          // Para HM-10: misma característica sirve para leer y escribir
-          if (charUUID.contains('ffe1') ||
-              characteristic.properties.writeWithoutResponse ||
-              (characteristic.properties.write &&
-                  characteristic.properties.notify)) {
-            writeCharacteristic = characteristic;
-            readCharacteristic = characteristic;
-
-            print('  ✓ HM-10 encontrado - Configurando comunicación serial');
-
-            // Configurar notificaciones para recibir datos
-            try {
-              if (characteristic.properties.notify) {
-                await characteristic.setNotifyValue(true);
-                characteristic.lastValueStream.listen((value) {
-                  if (value.isNotEmpty) {
-                    String receivedData = String.fromCharCodes(value);
-                    print('Serial recibido: $receivedData');
-                    if (dataCallback != null) {
-                      dataCallback!(receivedData);
-                    }
-                  }
-                });
-                print('  ✓ Notificaciones configuradas para recibir datos');
-              }
-            } catch (e) {
-              print('  ⚠ Error configurando notificaciones: $e');
-            }
-
-            print('✓ HM-10 listo para comunicación serial');
-            return; // Salir cuando encontremos la característica correcta
-          }
-        }
-      }
-
-      // Si no encontramos HM-10 específico, usar cualquier característica compatible
-      if (writeCharacteristic == null) {
-        for (BluetoothService service in services) {
-          for (BluetoothCharacteristic characteristic
-              in service.characteristics) {
-            if (characteristic.properties.writeWithoutResponse ||
-                characteristic.properties.write) {
-              writeCharacteristic = characteristic;
-              print(
-                '  ✓ Usando característica alternativa: ${characteristic.uuid}',
-              );
-              break;
-            }
-          }
-          if (writeCharacteristic != null) break;
-        }
-      }
-
-      if (writeCharacteristic == null) {
-        throw Exception('No se encontró ninguna característica de escritura');
-      }
-
-      print('Configuración completada - Listo para enviar comandos seriales');
-    } catch (e) {
-      print('Error configurando HM-10: $e');
-      throw Exception('Error configurando comunicación serial: $e');
-    }
-  }
-
-  // Cerrar conexión
+  // Cerrar conexión como en la implementación exitosa
   Future<void> _closeConnection() async {
-    if (connectedDevice != null) {
-      try {
+    try {
+      await characteristicSubscription?.cancel();
+      await connectionSubscription?.cancel();
+
+      if (connectedDevice != null) {
         await connectedDevice!.disconnect();
-      } catch (e) {
-        print('Error al desconectar: $e');
       }
+
       connectedDevice = null;
       writeCharacteristic = null;
-      readCharacteristic = null;
+      notifyCharacteristic = null;
       dataCallback = null;
+    } catch (e) {
+      // Silenciar errores de desconexión
+      print('Error al desconectar: $e');
     }
     isConnected.value = false;
   }
 
-  // Enviar datos al dispositivo (SIMPLIFICADO para HM-10)
+  // Enviar datos usando la lógica de la implementación exitosa
   Future<void> sendData(String data) async {
-    if (writeCharacteristic == null || !isConnected.value) {
-      Get.snackbar(
-        'Sin conexión',
-        'Dispositivo no conectado. Conéctate primero al HM-10.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
+    if (writeCharacteristic == null) {
+      throw Exception('No write characteristic available');
     }
 
     try {
-      // Convertir string a bytes (como Serial Bluetooth Terminal)
-      List<int> bytes = data.codeUnits;
+      // Agregar CR y LF como en Arduino Serial Monitor (implementación exitosa)
+      String message = '$data\r\n';
+      List<int> bytes =
+          message.codeUnits; // Usar codeUnits como en la implementación exitosa
 
-      print('Enviando comando serial: "$data"');
-
-      // Enviar directamente sin complicaciones (como HM-10)
       if (writeCharacteristic!.properties.writeWithoutResponse) {
-        // Método preferido para HM-10
         await writeCharacteristic!.write(bytes, withoutResponse: true);
-        print('✓ Comando enviado exitosamente: $data');
-      } else if (writeCharacteristic!.properties.write) {
-        // Método alternativo
-        await writeCharacteristic!.write(bytes, withoutResponse: false);
-        print('✓ Comando enviado exitosamente: $data');
       } else {
-        throw Exception('La característica no soporta escritura');
-      }
-
-      // Confirmación visual opcional (solo para comandos importantes)
-      if (data == 't') {
-        Get.snackbar(
-          'Test iniciado',
-          'Comando "t" enviado al robot',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
-        );
+        await writeCharacteristic!.write(bytes);
       }
     } catch (e) {
-      print('Error al enviar comando: $e');
-      Get.snackbar(
-        'Error de comunicación',
-        'No se pudo enviar el comando "$data". Verifica la conexión.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      throw Exception('Error sending data: $e');
     }
   }
 
@@ -396,6 +323,13 @@ class BluetoothController extends GetxController {
   // Desconectar del dispositivo actual
   Future<void> disconnect() async {
     await _closeConnection();
+  }
+
+  // Método adicional para disposar recursos
+  @override
+  void dispose() {
+    _closeConnection();
+    super.dispose();
   }
 
   // Obtener información de debug sobre la conexión HM-10

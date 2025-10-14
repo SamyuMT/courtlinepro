@@ -219,14 +219,30 @@ class BluetoothConnectionPage extends GetView<BluetoothController> {
 
   Widget _buildContinueButton() {
     return Obx(() {
-      return PrimaryButton(
-        text: "CONTINUE",
-        onPressed: controller.isConnected.value
-            ? controller.navigateToRobotTests
-            : null,
-        width: double.infinity,
-        height: 60,
-        textStyle: AppTextStyles.buttonMedium,
+      return Column(
+        children: [
+          // Botón Serial Console (siempre disponible)
+          PrimaryButton(
+            text: "SERIAL CONSOLE DEBUG",
+            onPressed: () => Get.toNamed('/serialconsole'),
+            width: double.infinity,
+            height: 50,
+            textStyle: AppTextStyles.buttonMedium.copyWith(fontSize: 14),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Botón Continue (solo cuando esté conectado)
+          PrimaryButton(
+            text: "CONTINUE TO TESTS",
+            onPressed: controller.isConnected.value
+                ? controller.navigateToRobotTests
+                : null,
+            width: double.infinity,
+            height: 60,
+            textStyle: AppTextStyles.buttonMedium,
+          ),
+        ],
       );
     });
   }
