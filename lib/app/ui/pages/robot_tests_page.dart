@@ -88,7 +88,7 @@ class RobotTestsPage extends GetView<RobotTestsController> {
                   Icon(Icons.terminal, color: AppColors.primary, size: 16),
                   const SizedBox(width: 8),
                   const Text(
-                    "Robot Serial Console:",
+                    "Test monitor:",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -97,33 +97,34 @@ class RobotTestsPage extends GetView<RobotTestsController> {
                   ),
                 ],
               ),
-              // Botón Iniciar Test (solo cuando el robot esté listo)
-              Obx(
-                () =>
-                    controller.robotReady.value &&
-                        !controller.testInitiated.value
-                    ? GestureDetector(
-                        onTap: controller.startTest,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            "Iniciar Test",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+              // Indicador de estado del test y botón de reinicio
+              Row(
+                children: [
+                  Obx(
+                    () => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: controller.testInitiated.value
+                            ? Colors.green
+                            : Colors.orange,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        controller.testInitiated.value
+                            ? "In progress"
+                            : "initializing...",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                      )
-                    : Container(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

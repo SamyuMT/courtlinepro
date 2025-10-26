@@ -29,28 +29,38 @@ class RobotConfigPage extends GetView<RobotConfigController> {
 
                 const SizedBox(height: 40),
 
-                // Contenido principal
+                // Contenido scrollable
                 Expanded(
-                  child: Column(
-                    children: [
-                      // Título de configuración
-                      _buildConfigTitle(),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Título de configuración
+                        _buildConfigTitle(),
 
-                      const SizedBox(height: 32),
+                        const SizedBox(height: 32),
 
-                      // Controles de configuración
-                      Expanded(child: _buildConfigControls()),
+                        // Monitor BLE
+                        _buildBleMonitor(),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      // Botón de probar cambios
-                      _buildTestButton(),
+                        // Controles de configuración
+                        _buildConfigControls(),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 24),
 
-                      // Botón de empezar a manejar
-                      _buildStartDrivingButton(),
-                    ],
+                        // Botón de probar cambios
+                        _buildTestButton(),
+
+                        const SizedBox(height: 16),
+
+                        // Botón de empezar a manejar
+                        _buildStartDrivingButton(),
+
+                        const SizedBox(height: 32), // Extra space at bottom
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -75,6 +85,83 @@ class RobotConfigPage extends GetView<RobotConfigController> {
     return const Text(
       "Robot configuration",
       style: AppTextStyles.sectionSubtitle,
+    );
+  }
+
+  Widget _buildBleMonitor() {
+    return Container(
+      width: double.infinity,
+      height: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.terminal, color: AppColors.primary, size: 16),
+              const SizedBox(width: 8),
+              const Text(
+                "Configuration monitor:",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Terminal de mensajes BLE
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Obx(() {
+                if (controller.instructionMessages.isEmpty) {
+                  return const Text(
+                    "> Esperando conexión del robot...",
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  reverse: true, // Mostrar mensajes más recientes abajo
+                  itemCount: controller.instructionMessages.length,
+                  itemBuilder: (context, index) {
+                    int reverseIndex =
+                        controller.instructionMessages.length - 1 - index;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 1),
+                      child: Text(
+                        "> ${controller.instructionMessages[reverseIndex]}",
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -103,6 +190,17 @@ class RobotConfigPage extends GetView<RobotConfigController> {
             controller.angularVelocity,
             "rad/s",
             controller.updateAngularVelocity,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Botón Confirm
+          PrimaryButton(
+            text: "CONFIRM VELOCITIES",
+            onPressed: controller.confirmVelocities,
+            width: double.infinity,
+            height: 50,
+            textStyle: AppTextStyles.buttonMedium.copyWith(fontSize: 14),
           ),
         ],
       ),
@@ -167,21 +265,39 @@ class RobotConfigPage extends GetView<RobotConfigController> {
 
             const SizedBox(width: 24),
 
-            // Valor actual
+            // Campo de texto para escribir velocidad
             Expanded(
-              child: Row(
-                children: [
-                  Obx(
-                    () => Text(
-                      velocity.value.toStringAsFixed(2),
-                      style: AppTextStyles.valueDisplay,
-                    ),
+              child: TextField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-
-                  const SizedBox(width: 8),
-
-                  Text(unit, style: AppTextStyles.unitLabel),
-                ],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  suffixText: unit,
+                  suffixStyle: AppTextStyles.unitLabel,
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                style: AppTextStyles.valueDisplay,
+                controller: label == "Linear velocity"
+                    ? controller.linearVelocityController
+                    : controller.angularVelocityController,
+                onSubmitted: (value) {
+                  double? newValue = double.tryParse(value);
+                  if (newValue != null) {
+                    onChanged(newValue);
+                  }
+                },
+                onChanged: (value) {
+                  double? newValue = double.tryParse(value);
+                  if (newValue != null) {
+                    onChanged(newValue);
+                  }
+                },
               ),
             ),
           ],
@@ -201,12 +317,16 @@ class RobotConfigPage extends GetView<RobotConfigController> {
   }
 
   Widget _buildStartDrivingButton() {
-    return PrimaryButton(
-      text: "START DRIVING",
-      onPressed: controller.navigateToManualControl,
-      width: double.infinity,
-      height: 60,
-      textStyle: AppTextStyles.buttonMedium,
-    );
+    return Obx(() {
+      return PrimaryButton(
+        text: "START DRIVING",
+        onPressed: controller.configurationSaved.value
+            ? controller.navigateToManualControl
+            : null,
+        width: double.infinity,
+        height: 60,
+        textStyle: AppTextStyles.buttonMedium,
+      );
+    });
   }
 }

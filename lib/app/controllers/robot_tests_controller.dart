@@ -30,6 +30,10 @@ class RobotTestsController extends GetxController {
   var testInitiated = false.obs;
   var robotReady = false.obs; // Si el robot mostró su menú y está listo
 
+  // Flags para comportamiento de navegación
+  var autoNavigateToDriving = false.obs;
+  var comeFromConfig = false.obs;
+
   // Subscription para recibir datos del BLE
   StreamSubscription? _dataSubscription;
 
@@ -38,6 +42,18 @@ class RobotTestsController extends GetxController {
     super.onInit();
     try {
       bluetoothController = Get.find<BluetoothController>();
+
+      // Verificar argumentos de navegación
+      final arguments = Get.arguments;
+      if (arguments != null) {
+        if (arguments['autoNavigateToDriving'] == true) {
+          autoNavigateToDriving.value = true;
+        }
+        if (arguments['comeFromConfig'] == true) {
+          comeFromConfig.value = true;
+        }
+      }
+
       _setupTestsListener();
       _setupBleDataListener();
     } catch (e) {
@@ -52,8 +68,8 @@ class RobotTestsController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    // Solo configurar listener, NO enviar "t" automáticamente
-    _waitForRobotMenu();
+    // ENVIAR "t" automáticamente al entrar a la página
+    _startAutomaticTest();
   }
 
   @override
@@ -85,10 +101,11 @@ class RobotTestsController extends GetxController {
     }
   }
 
-  // Esperar a que el robot muestre su menú principal
-  void _waitForRobotMenu() {
+  // Iniciar test automático al entrar a la página
+  Future<void> _startAutomaticTest() async {
     if (!bluetoothController.isConnected.value) {
       currentInstruction.value = "Sin conexión Bluetooth. Conéctate primero.";
+      instructionMessages.add("Error: No hay conexión BLE activa");
       Get.snackbar(
         'Sin conexión',
         'No hay conexión Bluetooth activa',
@@ -97,45 +114,26 @@ class RobotTestsController extends GetxController {
       return;
     }
 
-    // Configurar el listener de BLE
+    // Configurar el listener de BLE primero
     _setupBleDataListener();
-    currentInstruction.value = "Esperando que el robot muestre su menú...";
 
-    // Solo simular si no hay conexión real
-    if (!bluetoothController.isConnected.value) {
-      _simulateRobotMenu();
-    }
-  }
-
-  // Iniciar test automático enviando "t" - SOLO cuando el robot esté listo
-  Future<void> _initiateAutomaticTest() async {
-    if (testInitiated.value) {
-      return; // Ya se inició el test
-    }
-
-    if (!robotReady.value) {
-      Get.snackbar(
-        'Robot no listo',
-        'Espera a que el robot muestre su menú principal',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-
+    // Enviar 't' automáticamente
     try {
-      // Enviar comando "t" para iniciar test automático
+      instructionMessages.add("Enviando comando 't' para iniciar test...");
+      currentInstruction.value = "Iniciando test automático...";
+
       await bluetoothController.sendData("t");
       testInitiated.value = true;
-      currentInstruction.value = "Comando 't' enviado - iniciando tests...";
 
-      Get.snackbar(
-        'Test iniciado',
-        'Se envió comando de inicio de test al robot',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.primaryColor,
-        colorText: Get.theme.colorScheme.onPrimary,
-      );
+      instructionMessages.add("Comando 't' enviado - test iniciado");
+      currentInstruction.value =
+          "Test en progreso - observa los movimientos del robot";
+
+      print('Test automático iniciado correctamente');
     } catch (e) {
+      instructionMessages.add("Error al enviar comando 't': $e");
+      currentInstruction.value = "Error al iniciar test";
+
       Get.snackbar(
         'Error',
         'Error al iniciar test automático: $e',
@@ -144,36 +142,23 @@ class RobotTestsController extends GetxController {
     }
   }
 
-  // Simular el menú del robot (solo para testing sin conexión)
-  void _simulateRobotMenu() {
-    Timer(const Duration(seconds: 2), () {
-      instructionMessages.add("=== ROBOT CONTROL SYSTEM ===");
-      instructionMessages.add("c - Configuration Mode");
-      instructionMessages.add("t - Test Mode");
-      instructionMessages.add("r - Remote Control Mode");
-      instructionMessages.add("s - Activate Relay/Solenoid");
-      instructionMessages.add("Select option:");
-
-      currentInstruction.value =
-          "Robot listo - Presiona 'Iniciar Test' para enviar 't'";
-      robotReady.value = true;
-
-      // Mantener máximo 10 mensajes
-      if (instructionMessages.length > 10) {
-        instructionMessages.removeRange(0, instructionMessages.length - 10);
-      }
-    });
-  }
-
   // Verificar si todas las pruebas están completas
   void _checkAllTestsCompleted(bool _) {
     bool movementComplete = movementTests.values.every((test) => test.value);
     bool solenoidComplete = solenoidTests.values.every((test) => test.value);
 
     allTestsCompleted.value = movementComplete && solenoidComplete;
-  }
 
-  // Confirmar test visualmente (solo checklist, no envía comandos)
+    // Solo auto-navegar si viene desde configuración
+    if (allTestsCompleted.value &&
+        comeFromConfig.value &&
+        autoNavigateToDriving.value) {
+      Timer(const Duration(seconds: 2), () {
+        Get.offNamed('/mandocontrol');
+      });
+    }
+  } // Confirmar test visualmente (solo checklist, no envía comandos)
+
   void confirmTest(String testType) {
     // Solo marcar como completado para el checklist visual
     _markTestCompleted(testType);
@@ -221,31 +206,15 @@ class RobotTestsController extends GetxController {
     }
   }
 
-  // Reiniciar todas las pruebas
-  void restartTests() {
-    // Resetear estados de movimiento
-    movementTests.forEach((key, value) {
-      value.value = false;
-    });
-
-    // Resetear estados de solenoide
-    solenoidTests.forEach((key, value) {
-      value.value = false;
-    });
-
-    allTestsCompleted.value = false;
-    currentlyTesting.value = '';
-    testInitiated.value = false;
-    instructionMessages.clear();
-    currentInstruction.value = "Reiniciando tests...";
-
-    // Reiniciar test automático
-    _initiateAutomaticTest();
-  }
-
-  // Navegar a configuración del robot
+  // Navegar según el origen: Config→Driving, Otro→Config
   void navigateToConfiguration() {
-    Get.toNamed('/configuracionrobot');
+    if (comeFromConfig.value && autoNavigateToDriving.value) {
+      // Si viene desde configuración, ir directamente a driving
+      Get.offNamed('/mandocontrol');
+    } else {
+      // Navegación normal a configuración (viene de otro lugar)
+      Get.toNamed('/configuracionrobot');
+    }
   }
 
   // Limpiar historial de mensajes
@@ -303,6 +272,6 @@ class RobotTestsController extends GetxController {
 
   // Método público para iniciar test manualmente
   void startTest() {
-    _initiateAutomaticTest();
+    _startAutomaticTest();
   }
 }

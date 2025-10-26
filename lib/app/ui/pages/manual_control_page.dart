@@ -17,28 +17,16 @@ class ManualControlPage extends GetView<ManualControlController> {
         decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                // Header con velocidades
+                // Header con velocidades y título
                 _buildHeader(),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 40),
 
-                // Contenido principal
-                Expanded(
-                  child: Row(
-                    children: [
-                      // Controles de movimiento
-                      Expanded(flex: 2, child: _buildMovementControls()),
-
-                      const SizedBox(width: 16),
-
-                      // Panel lateral con información
-                      Expanded(flex: 1, child: _buildSidePanel()),
-                    ],
-                  ),
-                ),
+                // Controles principales (6 botones en orientación horizontal)
+                Expanded(child: _buildHorizontalControls()),
               ],
             ),
           ),
@@ -50,6 +38,10 @@ class ManualControlPage extends GetView<ManualControlController> {
   Widget _buildHeader() {
     return Column(
       children: [
+        // Título
+        const Text("CONTROL MANUAL", style: AppTextStyles.appHeader),
+        const SizedBox(height: 16),
+
         // Indicadores de velocidad
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -103,154 +95,68 @@ class ManualControlPage extends GetView<ManualControlController> {
             ),
           ],
         ),
-
-        const SizedBox(height: 16),
-
-        // Título y botón de configuración
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("COURTLINE-PRO", style: AppTextStyles.appHeader),
-            const Text("v1.0", style: AppTextStyles.version),
-            Row(
-              children: [
-                const Text("SETTINGS", style: AppTextStyles.buttonSmall),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: controller.openSettings,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: AppColors.grey,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Icon(
-                      Icons.settings,
-                      size: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ],
     );
   }
 
-  Widget _buildMovementControls() {
-    return Column(
-      children: [
-        // Fila superior de controles
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Control izquierdo superior
-            _buildControlButton(
-              svgAsset: 'assets/controles/camera.svg',
-              onPressed: controller.openCamera,
-            ),
-
-            // Control central superior
-            _buildControlButton(
-              svgAsset: 'assets/controles/up.svg',
-              onTapDown: (_) => controller.startMovement('forward'),
-              onTapUp: (_) => controller.stopMovement(),
-              onTapCancel: controller.stopMovement,
-            ),
-
-            // Control derecho superior (dashboard)
-            _buildControlButton(
-              svgAsset: 'assets/controles/dashboard.svg',
-              onPressed: controller.toggleDashboard,
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 20),
-
-        // Fila central de controles
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Giro izquierda
-            _buildControlButton(
-              svgAsset: 'assets/controles/left.svg',
-              onTapDown: (_) => controller.startMovement('left'),
-              onTapUp: (_) => controller.stopMovement(),
-              onTapCancel: controller.stopMovement,
-            ),
-
-            // Controles centrales (velocímetro y botones)
-            Column(
-              children: [
-                // Velocímetro
-                _buildSpeedometer(),
-
-                const SizedBox(height: 16),
-
-                // Botones up/down
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildSmallControlButton(
-                      svgAsset: 'assets/controles/arrow_up_small.svg',
-                      onPressed: controller.increaseSpeed,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildSmallControlButton(
-                      svgAsset: 'assets/controles/arrow_down_small.svg',
-                      onPressed: controller.decreaseSpeed,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            // Giro derecha
-            _buildControlButton(
-              svgAsset: 'assets/controles/right.svg',
-              onTapDown: (_) => controller.startMovement('right'),
-              onTapUp: (_) => controller.stopMovement(),
-              onTapCancel: controller.stopMovement,
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 20),
-
-        // Fila inferior de controles
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Espacio
-            const SizedBox(width: 62),
-
-            // Control hacia atrás
-            _buildControlButton(
-              svgAsset: 'assets/controles/down.svg',
-              onTapDown: (_) => controller.startMovement('backward'),
-              onTapUp: (_) => controller.stopMovement(),
-              onTapCancel: controller.stopMovement,
-            ),
-
-            // Control de solenoide
-            Obx(
-              () => _buildControlButton(
-                svgAsset: controller.isSolenoidActive.value
-                    ? 'assets/controles/solenoid.svg'
-                    : 'assets/controles/solenoid_inactive.svg',
-                onPressed: controller.toggleSolenoid,
-                backgroundColor: controller.isSolenoidActive.value
-                    ? AppColors.online
-                    : AppColors.grey,
+  Widget _buildHorizontalControls() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Fila superior: Izquierda, Acelerar, Derecha
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildControlButton(
+                svgAsset: 'assets/controles/izquierda.svg',
+                onTapDown: (_) => controller.startTurn('left'),
+                onTapUp: (_) => controller.stopTurn('left'),
+                onTapCancel: () => controller.stopTurn('left'),
+                label: 'GIRO IZQ',
               ),
-            ),
-          ],
-        ),
-      ],
+
+              _buildControlButton(
+                svgAsset: 'assets/controles/acelerar.svg',
+                onPressed: () => controller.sendMovementCommand('w'),
+                label: 'ACELERAR',
+              ),
+
+              _buildControlButton(
+                svgAsset: 'assets/controles/derecha.svg',
+                onTapDown: (_) => controller.startTurn('right'),
+                onTapUp: (_) => controller.stopTurn('right'),
+                onTapCancel: () => controller.stopTurn('right'),
+                label: 'GIRO DER',
+              ),
+            ],
+          ),
+          const SizedBox(height: 60),
+
+          // Fila inferior: Regar, Frenar, Reversa
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildControlButton(
+                svgAsset: 'assets/controles/regar.svg',
+                onPressed: () => controller.activateWatering(),
+                label: 'REGAR',
+              ),
+              _buildControlButton(
+                svgAsset: 'assets/controles/reversa.svg',
+                onPressed: () => controller.sendMovementCommand('x'),
+                label: 'REVERSA'),
+
+              _buildControlButton(
+                svgAsset: 'assets/controles/frenar.svg',
+                onPressed: () => controller.sendMovementCommand('s'),
+                label: 'FRENAR',
+              )
+              ,
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -262,30 +168,48 @@ class ManualControlPage extends GetView<ManualControlController> {
     void Function(TapUpDetails)? onTapUp,
     VoidCallback? onTapCancel,
     Color backgroundColor = AppColors.lightGrey,
+    String? label,
   }) {
     Widget iconWidget;
 
     if (svgAsset != null) {
       iconWidget = SvgPicture.asset(
         svgAsset,
-        width: 30,
-        height: 30,
+        width: 50,
+        height: 50,
         colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
       );
     } else if (icon != null) {
-      iconWidget = Icon(icon, color: Colors.black, size: 30);
+      iconWidget = Icon(icon, color: Colors.black, size: 50);
     } else {
-      iconWidget = Icon(Icons.help, color: Colors.black, size: 30);
+      iconWidget = Icon(Icons.help, color: Colors.black, size: 50);
     }
 
-    Widget button = Container(
-      width: 62,
-      height: 62,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(31),
-      ),
-      child: iconWidget,
+    Widget button = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+          ),
+          child: Center(child: iconWidget),
+        ),
+        if (label != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: AppTextStyles.buttonSmall.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
     );
 
     if (onTapDown != null || onTapUp != null) {
@@ -298,79 +222,5 @@ class ManualControlPage extends GetView<ManualControlController> {
     } else {
       return GestureDetector(onTap: onPressed, child: button);
     }
-  }
-
-  Widget _buildSmallControlButton({
-    IconData? icon,
-    String? svgAsset,
-    VoidCallback? onPressed,
-  }) {
-    Widget iconWidget;
-
-    if (svgAsset != null) {
-      iconWidget = SvgPicture.asset(
-        svgAsset,
-        width: 16,
-        height: 16,
-        colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
-      );
-    } else if (icon != null) {
-      iconWidget = Icon(icon, color: Colors.black, size: 16);
-    } else {
-      iconWidget = Icon(Icons.help, color: Colors.black, size: 16);
-    }
-
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: AppColors.grey,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: iconWidget,
-      ),
-    );
-  }
-
-  Widget _buildSpeedometer() {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(color: AppColors.grey, shape: BoxShape.circle),
-      child: Obx(
-        () => Center(
-          child: Text(
-            '${(controller.currentSpeed.value * 10).round()}',
-            style: AppTextStyles.configLabel.copyWith(fontSize: 18),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSidePanel() {
-    return Column(
-      children: [
-        // Panel vacío por ahora (se puede agregar información adicional)
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Center(
-              child: Text(
-                "Panel de información\n(Futuras funciones)",
-                style: AppTextStyles.instructions,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

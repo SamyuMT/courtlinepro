@@ -45,11 +45,30 @@ class ManualControlController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    // Verificar conexión
-    if (!bluetoothController.isConnected.value) {
+
+    // Enviar 'r' automáticamente al entrar a control manual
+    if (bluetoothController.isConnected.value) {
+      _enterRemoteControlMode();
+    } else {
       Get.snackbar(
         'Sin conexión',
         'No hay conexión Bluetooth activa',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  // Entrar al modo de control remoto enviando 'r'
+  Future<void> _enterRemoteControlMode() async {
+    try {
+      print('📡 Enviando comando "r" para control remoto...');
+      await bluetoothController.sendData("r");
+      print('✅ Comando "r" enviado exitosamente - Modo control remoto activo');
+    } catch (e) {
+      print('❌ Error enviando comando "r": $e');
+      Get.snackbar(
+        'Error BLE',
+        'No se pudo activar modo control remoto: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -298,5 +317,77 @@ class ManualControlController extends GetxController {
       'Velocidad ajustada a modo $configType',
       snackPosition: SnackPosition.BOTTOM,
     );
+  }
+
+  // Envío directo de comandos según protocolo Arduino
+  Future<void> sendDirectCommand(String command) async {
+    if (!bluetoothController.isConnected.value) {
+      Get.snackbar(
+        'Sin conexión',
+        'No hay conexión Bluetooth',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    try {
+      print('📡 Enviando comando directo: "$command"');
+      await bluetoothController.sendData(command);
+      print('✅ Comando "$command" enviado exitosamente');
+    } catch (e) {
+      print('❌ Error enviando comando "$command": $e');
+      Get.snackbar(
+        'Error BLE',
+        'No se pudo enviar comando: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  // Iniciar giro - mantiene el comando activo
+  void startTurn(String direction) {
+    if (!bluetoothController.isConnected.value) return;
+
+    String command = direction == 'left' ? 'a' : 'd';
+    sendDirectCommand(command);
+
+    currentDirection.value = direction;
+    isMoving.value = true;
+  }
+
+  // Parar giro - envía comando de parada según dirección
+  void stopTurn(String direction) {
+    if (!bluetoothController.isConnected.value) return;
+
+    String command = direction == 'left' ? 'q' : 'e';
+    sendDirectCommand(command);
+
+    currentDirection.value = '';
+    isMoving.value = false;
+  }
+
+  // Comando de movimiento directo (para acelerar, frenar, reversa)
+  void sendMovementCommand(String command) {
+    sendDirectCommand(command);
+  }
+
+  // Comando específico para el solenoide (regar)
+  Future<void> activateWatering() async {
+    try {
+      await sendDirectCommand('v');
+
+      Get.snackbar(
+        'Regando',
+        'Sistema de riego activado',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Error al activar riego: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 }
