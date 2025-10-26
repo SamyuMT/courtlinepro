@@ -35,8 +35,8 @@ class ManualControlController extends GetxController {
       _initializeVelocities();
     } catch (e) {
       Get.snackbar(
-        'Error de inicialización',
-        'No se pudieron cargar los controladores necesarios',
+        'Initialization error',
+        'The required drivers could not be loaded',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -51,8 +51,8 @@ class ManualControlController extends GetxController {
       _enterRemoteControlMode();
     } else {
       Get.snackbar(
-        'Sin conexión',
-        'No hay conexión Bluetooth activa',
+        'Offline',
+        'No active Bluetooth connection',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -61,14 +61,14 @@ class ManualControlController extends GetxController {
   // Entrar al modo de control remoto enviando 'r'
   Future<void> _enterRemoteControlMode() async {
     try {
-      print('📡 Enviando comando "r" para control remoto...');
+      print('📡 Sending "r" command for remote control...');
       await bluetoothController.sendData("r");
-      print('✅ Comando "r" enviado exitosamente - Modo control remoto activo');
+      print('✅ Command "r" sent successfully - Remote control mode active');
     } catch (e) {
-      print('❌ Error enviando comando "r": $e');
+      print('❌ Error sending command "r": $e');
       Get.snackbar(
         'Error BLE',
-        'No se pudo activar modo control remoto: $e',
+        'Could not activate remote control mode: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -91,8 +91,8 @@ class ManualControlController extends GetxController {
   void startMovement(String direction) {
     if (!bluetoothController.isConnected.value) {
       Get.snackbar(
-        'Sin conexión',
-        'No hay conexión Bluetooth',
+        'Offline',
+        'No Bluetooth connection',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -135,7 +135,7 @@ class ManualControlController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Error al enviar comando de movimiento: $e',
+        'Error sending movement command: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -149,7 +149,7 @@ class ManualControlController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Error al enviar comando de parada: $e',
+        'Error sending stop command: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -171,8 +171,8 @@ class ManualControlController extends GetxController {
       currentSpeed.value = (currentSpeed.value + 0.1).clamp(0.1, 2.0);
 
       Get.snackbar(
-        'Velocidad aumentada',
-        'Factor de velocidad: ${(currentSpeed.value * 100).round()}%',
+        'Increased speed',
+        'Speed factor: ${(currentSpeed.value * 100).round()}%',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 1),
       );
@@ -214,7 +214,7 @@ class ManualControlController extends GetxController {
       await bluetoothController.sendData(command);
 
       Get.snackbar(
-        'Solenoide ${isSolenoidActive.value ? 'activado' : 'desactivado'}',
+        'Solenoide ${isSolenoidActive.value ? 'activated' : 'disabled'}',
         '',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 1),
@@ -377,15 +377,15 @@ class ManualControlController extends GetxController {
       await sendDirectCommand('v');
 
       Get.snackbar(
-        'Regando',
-        'Sistema de riego activado',
+        'Watering',
+        'Irrigation system activated',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Error al activar riego: $e',
+        'Error activating irrigation: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }

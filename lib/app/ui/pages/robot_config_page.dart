@@ -129,7 +129,7 @@ class RobotConfigPage extends GetView<RobotConfigController> {
               child: Obx(() {
                 if (controller.instructionMessages.isEmpty) {
                   return const Text(
-                    "> Esperando conexión del robot...",
+                    "> Waiting for robot connection...",
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 12,

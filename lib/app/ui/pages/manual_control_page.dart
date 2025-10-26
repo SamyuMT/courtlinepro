@@ -39,7 +39,7 @@ class ManualControlPage extends GetView<ManualControlController> {
     return Column(
       children: [
         // Título
-        const Text("CONTROL MANUAL", style: AppTextStyles.appHeader),
+        const Text("MANUAL CONTROL", style: AppTextStyles.appHeader),
         const SizedBox(height: 16),
 
         // Indicadores de velocidad
@@ -113,13 +113,13 @@ class ManualControlPage extends GetView<ManualControlController> {
                 onTapDown: (_) => controller.startTurn('left'),
                 onTapUp: (_) => controller.stopTurn('left'),
                 onTapCancel: () => controller.stopTurn('left'),
-                label: 'GIRO IZQ',
+                label: 'LEFT TURN',
               ),
 
               _buildControlButton(
                 svgAsset: 'assets/controles/acelerar.svg',
                 onPressed: () => controller.sendMovementCommand('w'),
-                label: 'ACELERAR',
+                label: 'ACCELERATE',
               ),
 
               _buildControlButton(
@@ -127,7 +127,7 @@ class ManualControlPage extends GetView<ManualControlController> {
                 onTapDown: (_) => controller.startTurn('right'),
                 onTapUp: (_) => controller.stopTurn('right'),
                 onTapCancel: () => controller.stopTurn('right'),
-                label: 'GIRO DER',
+                label: 'RIGHT TURN',
               ),
             ],
           ),
@@ -140,17 +140,17 @@ class ManualControlPage extends GetView<ManualControlController> {
               _buildControlButton(
                 svgAsset: 'assets/controles/regar.svg',
                 onPressed: () => controller.activateWatering(),
-                label: 'REGAR',
+                label: 'VALVE',
               ),
               _buildControlButton(
                 svgAsset: 'assets/controles/reversa.svg',
                 onPressed: () => controller.sendMovementCommand('x'),
-                label: 'REVERSA'),
+                label: 'REVERSE'),
 
               _buildControlButton(
                 svgAsset: 'assets/controles/frenar.svg',
                 onPressed: () => controller.sendMovementCommand('s'),
-                label: 'FRENAR',
+                label: 'STOP',
               )
               ,
             ],

@@ -74,8 +74,8 @@ class BluetoothController extends GetxController {
       // Verificar si Bluetooth está disponible
       if (await FlutterBluePlus.isSupported == false) {
         Get.snackbar(
-          'Bluetooth no disponible',
-          'Este dispositivo no soporta Bluetooth',
+          'Bluetooth not available',
+          'This device does not support Bluetooth',
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -96,7 +96,7 @@ class BluetoothController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Error al verificar el estado de Bluetooth: $e',
+        'Error checking Bluetooth status: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -111,8 +111,8 @@ class BluetoothController extends GetxController {
   Future<void> startScanning() async {
     if (!isBluetoothEnabled.value) {
       Get.snackbar(
-        'Bluetooth desactivado',
-        'Por favor, activa el Bluetooth para buscar dispositivos.',
+        'Bluetooth disabled',
+        'Please turn on Bluetooth to search for devices.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -128,7 +128,7 @@ class BluetoothController extends GetxController {
         availableDevices.add({
           'name': device.platformName.isNotEmpty
               ? device.platformName
-              : 'Dispositivo desconocido',
+              : 'Unknown Device',
           'address': device.remoteId.toString(),
           'type': 'connected',
           'device': device,
@@ -151,7 +151,7 @@ class BluetoothController extends GetxController {
                 ? result.device.platformName
                 : result.advertisementData.localName.isNotEmpty
                 ? result.advertisementData.localName
-                : 'Dispositivo desconocido',
+                : 'Unknown Device',
             'address': result.device.remoteId.toString(),
             'type': 'discovered',
             'device': result.device,
@@ -171,7 +171,7 @@ class BluetoothController extends GetxController {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Error al buscar dispositivos: $e',
+        'Error searching for devices: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -200,8 +200,8 @@ class BluetoothController extends GetxController {
           notifyCharacteristic = null;
           dataCallback = null;
           Get.snackbar(
-            'Desconectado',
-            'Se perdió la conexión con el dispositivo',
+            'Offline',
+            'Connection to the device was lost',
             snackPosition: SnackPosition.BOTTOM,
           );
         }
@@ -254,16 +254,16 @@ class BluetoothController extends GetxController {
       }
 
       Get.snackbar(
-        'Conectado',
-        'Conectado a ${deviceInfo['name']} - Listo para enviar comandos',
+        'Connected',
+        'Connected to ${deviceInfo['name']} - Ready to send commands',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
     } catch (e) {
       Get.snackbar(
-        'Error de conexión',
-        'No se pudo conectar a ${deviceInfo['name']}: $e',
+        'Connection error',
+        'Could not connect to ${deviceInfo['name']}: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
@@ -288,7 +288,7 @@ class BluetoothController extends GetxController {
       dataCallback = null;
     } catch (e) {
       // Silenciar errores de desconexión
-      print('Error al desconectar: $e');
+      print('Error disconnecting: $e');
     }
     isConnected.value = false;
   }
@@ -335,16 +335,16 @@ class BluetoothController extends GetxController {
   // Obtener información de debug sobre la conexión HM-10
   String getConnectionDebugInfo() {
     if (!isConnected.value || connectedDevice == null) {
-      return 'No hay dispositivo conectado';
+      return 'No device connected';
     }
 
-    String info = 'Conexión HM-10 activa:\n';
-    info += 'Dispositivo: ${connectedDevice!.platformName}\n';
-    info += 'Dirección: ${connectedDevice!.remoteId}\n';
+    String info = 'Active HM-10 connection:\n';
+    info += 'Device: ${connectedDevice!.platformName}\n';
+    info += 'Address: ${connectedDevice!.remoteId}\n';
     info +=
-        'Característica de comunicación: ${writeCharacteristic?.uuid ?? "No encontrada"}\n';
+        'Communication feature: ${writeCharacteristic?.uuid ?? "Not find"}\n';
     info +=
-        'Estado: ${isConnected.value ? "Conectado y listo" : "Desconectado"}\n';
+        'State: ${isConnected.value ? "Conected and ready" : "Desconected"}\n';
 
     return info;
   }

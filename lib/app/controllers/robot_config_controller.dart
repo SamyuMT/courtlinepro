@@ -35,8 +35,8 @@ class RobotConfigController extends GetxController {
       _loadSavedConfiguration();
     } catch (e) {
       Get.snackbar(
-        'Error de inicialización',
-        'No se pudo cargar el controlador Bluetooth',
+        'Initialization error',
+        'Could not load Bluetooth driver',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -44,7 +44,7 @@ class RobotConfigController extends GetxController {
 
   // Mensajes recibidos del BLE para monitoreo
   var instructionMessages = <String>[].obs;
-  var currentInstruction = "Conectando al sistema de configuración...".obs;
+  var currentInstruction = "Connecting to the configuration system...".obs;
 
   @override
   void onReady() {
@@ -52,7 +52,7 @@ class RobotConfigController extends GetxController {
 
     // REINICIAR la página cada vez que se entra (fresh start)
     instructionMessages.clear();
-    instructionMessages.add("=== PÁGINA DE CONFIGURACIÓN INICIADA ===");
+    instructionMessages.add("=== SETTINGS PAGE STARTED ===");
 
     // Verificar conexión BLE real (no solo el observable)
     _verifyAndInitializeBleConnection();
@@ -60,7 +60,7 @@ class RobotConfigController extends GetxController {
 
   // Verificar el estado real de la conexión BLE
   void _verifyAndInitializeBleConnection() {
-    instructionMessages.add("Verificando conexión BLE...");
+    instructionMessages.add("Checking BLE connection...");
 
     // Debug completo del estado
     bool isConnectedValue = bluetoothController.isConnected.value;
@@ -78,9 +78,9 @@ class RobotConfigController extends GetxController {
     // Si hay dispositivo conectado pero isConnected es false, forzar reconexión del estado
     if (hasDevice && hasWriteChar && !isConnectedValue) {
       instructionMessages.add(
-        "DETECTADO: Dispositivo conectado pero estado inconsistente",
+        "DETECTED: Device connected but status inconsistent",
       );
-      instructionMessages.add("Forzando actualización del estado...");
+      instructionMessages.add("Forcing status update...");
 
       // Forzar actualización del estado
       bluetoothController.isConnected.value = true;
@@ -89,13 +89,13 @@ class RobotConfigController extends GetxController {
 
     if (isConnectedValue && hasDevice && hasWriteChar) {
       instructionMessages.add(
-        "✅ Conexión BLE verificada - Iniciando configuración",
+        "✅ BLE connection verified - Starting setup",
       );
       bluetoothController.setDataListener(onBleDataReceived);
       _startAutomaticConfigurationMode();
     } else {
-      instructionMessages.add("❌ Sin conexión BLE válida");
-      currentInstruction.value = "Sin conexión Bluetooth. Conéctate primero.";
+      instructionMessages.add("❌ No valid BLE connection");
+      currentInstruction.value = "No Bluetooth connection. Connect first.";
 
       // Mostrar debug detallado
       checkConnectionStatus();
@@ -111,28 +111,28 @@ class RobotConfigController extends GetxController {
 
   // Iniciar configuración automática (ya verificada la conexión BLE)
   Future<void> _startAutomaticConfigurationMode() async {
-    instructionMessages.add("🔧 ENVIANDO COMANDO 'C' PARA CONFIGURACIÓN...");
-    currentInstruction.value = "Iniciando configuración automática...";
+    instructionMessages.add("🔧 SENDING COMMAND 'C' FOR CONFIGURATION...");
+    currentInstruction.value = "Starting automatic configuration...";
 
     try {
       // Enviar 'c' automáticamente para entrar al modo configuración
       await bluetoothController.sendData("c");
 
-      instructionMessages.add("✅ Comando 'c' enviado exitosamente");
+      instructionMessages.add("✅ Command 'c' sent successfully");
       currentInstruction.value =
-          "Modo configuración activado - Listo para velocidades";
+          "Configuration mode activated - Ready for speeds";
 
-      print('✅ Configuración automática iniciada correctamente');
+      print('✅ Automatic configuration started successfully');
     } catch (e) {
-      instructionMessages.add("❌ Error enviando 'c': $e");
-      currentInstruction.value = "Error al iniciar configuración";
+      instructionMessages.add("❌ Error sending 'c': $e");
+      currentInstruction.value = "Error starting configuration";
 
-      print('❌ Error en configuración: $e');
+      print('❌ Configuration error: $e');
 
       // Mostrar snackbar de error
       Get.snackbar(
         'Error BLE',
-        'No se pudo enviar comando de configuración: $e',
+        'Failed to send configuration command: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Get.theme.colorScheme.onError,
@@ -178,8 +178,8 @@ class RobotConfigController extends GetxController {
       // NO enviar automáticamente, solo cuando se confirme
     } else {
       Get.snackbar(
-        'Valor inválido',
-        'La velocidad lineal debe estar entre $minLinearVelocity y $maxLinearVelocity cm/s',
+        'Invalid value',
+        'The linear velocity must be between $minLinearVelocity y $maxLinearVelocity cm/s',
         snackPosition: SnackPosition.BOTTOM,
       );
       // Restaurar valor anterior en TextField
@@ -197,8 +197,8 @@ class RobotConfigController extends GetxController {
       // NO enviar automáticamente, solo cuando se confirme
     } else {
       Get.snackbar(
-        'Valor inválido',
-        'La velocidad angular debe estar entre $minAngularVelocity y $maxAngularVelocity rad/s',
+        'Invalid value',
+        'The angular velocity must be between $minAngularVelocity y $maxAngularVelocity rad/s',
         snackPosition: SnackPosition.BOTTOM,
       );
       // Restaurar valor anterior en TextField
@@ -210,8 +210,8 @@ class RobotConfigController extends GetxController {
   Future<void> confirmVelocities() async {
     if (!bluetoothController.isConnected.value) {
       Get.snackbar(
-        'Sin conexión',
-        'No hay conexión Bluetooth para confirmar velocidades',
+        'Offline',
+        'No Bluetooth connection to confirm speeds',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -225,36 +225,36 @@ class RobotConfigController extends GetxController {
       String velocityCommand =
           '${linearVelocityMS.toStringAsFixed(2)},${angularVelocity.value.toStringAsFixed(2)}';
 
-      instructionMessages.add("Enviando velocidades: $velocityCommand");
-      currentInstruction.value = "Configurando velocidades...";
+      instructionMessages.add("Sending speeds: $velocityCommand");
+      currentInstruction.value = "Setting speeds...";
 
       // Enviar velocidades
       await bluetoothController.sendData(velocityCommand);
 
-      instructionMessages.add("Velocidades enviadas, confirmando...");
+      instructionMessages.add("Sent speeds, confirming...");
 
       // Esperar 1 segundo y enviar 'n' para confirmar
       await Future.delayed(const Duration(seconds: 1));
 
       await bluetoothController.sendData("n");
 
-      instructionMessages.add("Comando 'n' enviado - configuración confirmada");
-      currentInstruction.value = "Velocidades configuradas exitosamente";
+      instructionMessages.add("Command 'n' sent - configuration confirmed");
+      currentInstruction.value = "Speeds successfully set";
 
       configurationSaved.value = true;
 
       Get.snackbar(
-        'Velocidades configuradas',
-        'Las velocidades han sido enviadas y confirmadas',
+        'Configured speeds',
+        'Speeds have been sent and confirmed',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.primaryColor,
         colorText: Get.theme.colorScheme.onPrimary,
       );
     } catch (e) {
-      instructionMessages.add("Error al confirmar velocidades: $e");
+      instructionMessages.add("Error confirming speeds: $e");
       Get.snackbar(
         'Error',
-        'Error al confirmar velocidades: $e',
+        'Error confirming speeds: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -264,8 +264,8 @@ class RobotConfigController extends GetxController {
   Future<void> testChanges() async {
     if (!configurationSaved.value) {
       Get.snackbar(
-        'Configuración no guardada',
-        'Confirma las velocidades antes de probar',
+        'Unsaved configuration',
+        'Confirm speeds before testing',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -288,8 +288,8 @@ class RobotConfigController extends GetxController {
     configurationSaved.value = false;
 
     Get.snackbar(
-      'Configuración restablecida',
-      'Los valores han sido restablecidos a los valores por defecto',
+      'Settings reset',
+      'The values have been reset to default values',
       snackPosition: SnackPosition.BOTTOM,
     );
   }
@@ -301,14 +301,14 @@ class RobotConfigController extends GetxController {
       configurationSaved.value = true;
 
       Get.snackbar(
-        'Configuración guardada',
-        'La configuración ha sido guardada correctamente',
+        'Configuration saved',
+        'The configuration has been saved successfully',
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Error al guardar la configuración: $e',
+        'Error saving configuration: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -318,8 +318,8 @@ class RobotConfigController extends GetxController {
   void navigateToManualControl() {
     if (!configurationSaved.value) {
       Get.snackbar(
-        'Configuración no guardada',
-        'Guarda la configuración antes de continuar',
+        'Unsaved configuration',
+        'Save the settings before continuing',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;

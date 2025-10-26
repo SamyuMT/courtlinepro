@@ -148,7 +148,7 @@ class BluetoothConnectionPage extends GetView<BluetoothController> {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  "Buscando dispositivos...",
+                  "Searching for devices...",
                   style: AppTextStyles.instructions,
                 ),
               ],
@@ -159,7 +159,7 @@ class BluetoothConnectionPage extends GetView<BluetoothController> {
         if (controller.availableDevices.isEmpty) {
           return const Center(
             child: Text(
-              "No se encontraron dispositivos.\nPresiona 'SEARCH BLE' para buscar.",
+              "No devices found.\nPress 'SEARCH BLE' to search.",
               style: AppTextStyles.instructions,
               textAlign: TextAlign.center,
             ),
@@ -174,7 +174,7 @@ class BluetoothConnectionPage extends GetView<BluetoothController> {
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: ListTile(
                 title: Text(
-                  device['name'] ?? 'Dispositivo desconocido',
+                  device['name'] ?? 'Unknown Device',
                   style: AppTextStyles.listItem.copyWith(
                     fontWeight: FontWeight.w600,
                   ),

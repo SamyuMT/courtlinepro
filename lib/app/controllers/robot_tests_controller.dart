@@ -58,8 +58,8 @@ class RobotTestsController extends GetxController {
       _setupBleDataListener();
     } catch (e) {
       Get.snackbar(
-        'Error de inicialización',
-        'No se pudo inicializar el controlador de tests',
+        'Initialization error',
+        'The test controller could not be initialized.',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -95,20 +95,20 @@ class RobotTestsController extends GetxController {
     if (bluetoothController.isConnected.value) {
       // Configurar listener para recibir datos del BLE
       bluetoothController.setDataListener(onBleDataReceived);
-      print('Listener de BLE configurado');
+      print('BLE listener configured');
     } else {
-      print('No hay conexión BLE activa');
+      print('No active BLE connection');
     }
   }
 
   // Iniciar test automático al entrar a la página
   Future<void> _startAutomaticTest() async {
     if (!bluetoothController.isConnected.value) {
-      currentInstruction.value = "Sin conexión Bluetooth. Conéctate primero.";
-      instructionMessages.add("Error: No hay conexión BLE activa");
+      currentInstruction.value = "No Bluetooth connection. Connect first.";
+      instructionMessages.add("Error: No active BLE connection");
       Get.snackbar(
-        'Sin conexión',
-        'No hay conexión Bluetooth activa',
+        'Offline',
+        'No active Bluetooth connection',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -119,24 +119,24 @@ class RobotTestsController extends GetxController {
 
     // Enviar 't' automáticamente
     try {
-      instructionMessages.add("Enviando comando 't' para iniciar test...");
-      currentInstruction.value = "Iniciando test automático...";
+      instructionMessages.add("Sending 't' command to start test...");
+      currentInstruction.value = "Starting automatic test...";
 
       await bluetoothController.sendData("t");
       testInitiated.value = true;
 
-      instructionMessages.add("Comando 't' enviado - test iniciado");
+      instructionMessages.add("Command 't' sent - test started");
       currentInstruction.value =
-          "Test en progreso - observa los movimientos del robot";
+          "Test in progress - observe the robot's movements";
 
-      print('Test automático iniciado correctamente');
+      print('Automatic test started successfully');
     } catch (e) {
-      instructionMessages.add("Error al enviar comando 't': $e");
-      currentInstruction.value = "Error al iniciar test";
+      instructionMessages.add("Error sending command 't': $e");
+      currentInstruction.value = "Error starting test";
 
       Get.snackbar(
         'Error',
-        'Error al iniciar test automático: $e',
+        'Error starting automatic test: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -166,8 +166,8 @@ class RobotTestsController extends GetxController {
     // Solo mostrar notificación si se completaron todos los tests
     if (allTestsCompleted.value) {
       Get.snackbar(
-        'Todos los tests completados',
-        'Puedes continuar a la configuración del robot',
+        'All tests completed',
+        'You can continue to the robot configuration',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
         backgroundColor: Get.theme.primaryColor,
@@ -221,7 +221,7 @@ class RobotTestsController extends GetxController {
   void clearMessageHistory() {
     instructionMessages.clear();
     currentInstruction.value =
-        "Historial limpio - esperando nuevos mensajes...";
+        "Clear history - waiting for new messages...";
   }
 
   // Método para recibir datos del BLE (llamar desde el BluetoothController)
@@ -254,8 +254,8 @@ class RobotTestsController extends GetxController {
             lowerData.contains('configuration'))) {
       robotReady.value = true;
       currentInstruction.value =
-          "Robot listo - Presiona 'Iniciar Test' para enviar 't'";
-      print('Robot menú detectado - Robot listo para recibir comandos');
+          "Robot ready - Press 'Start Test' to send 't'";
+      print('Robot menu detected - Robot ready to receive commands');
     }
 
     // Detectar mensajes de test en progreso
